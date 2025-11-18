@@ -1,45 +1,29 @@
-import { Request, Response } from "express";
-import bcrypt from "bcryptjs";
-import { createUser, findUserByEmail } from "../dao/UserDAO";
-import { User } from "../models/User";
-import { v4 as uuidv4 } from "uuid";
+import GlobalController from './GlobalController';
+import UserDAO from '../dao/UserDAO';
+import { User } from '../models/User';
 
-export async function register(req: Request, res: Response) {
-  try {
-    const { firstName, lastName, email, password, age, photo } = req.body;
 
-    if (!firstName || !lastName || !email || !password)
-      return res.status(400).json({ error: "Missing fields" });
+class UserController extends GlobalController<User> {
+    /**
+     * Create a new UserController instance.
+     * 
+     * The constructor passes the UserDAO to the parent class so that
+     * all inherited methods (create, read, update, delete, getAll)
+     * operate on the User model.
+     */
+    constructor() {
+        super(UserDAO);
+    }
+    
 
-    const existing = await findUserByEmail(email);
-    if (existing) return res.status(409).json({ error: "Email already registered" });
+    // Add reset password, register, login normal and login w apps
 
-    const hashed = await bcrypt.hash(password, 10);
-    const id = uuidv4();
-    const now = Date.now();
-
-    const newUser: User = {
-      id,
-      firstName,
-      lastName,
-      email,
-      age: typeof age === "number" ? age : 0,
-      photo,
-      password: hashed,
-      oauth: [],
-      createdAt: now,
-      updatedAt: now,
-      status: "offline",
-    };
-
-    await createUser(newUser);
-
-    return res.json({
-      message: "User created",
-      user: { id, firstName, lastName, email },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal error" });
-  }
 }
+
+/**
+ * Export a singleton instance of UserController.
+ * 
+ * This allows the same controller to be reused across routes
+ * without creating multiple instances.
+ */
+export default new UserController();

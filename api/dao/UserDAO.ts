@@ -1,19 +1,11 @@
-import { db } from "../utils/firebase";
-import { User } from "../models/User";
+import { User } from '../models/User';
+import { GlobalDAO } from './GlobalDAO';
 
-const USERS_REF = db.ref("users");
+class UserDAO extends GlobalDAO<User> {
 
-export async function createUser(user: User) {
-  const newUserRef = USERS_REF.child(user.id);
-  await newUserRef.set(user);
-  return user;
+  constructor() {
+    super('users');
+  }
 }
 
-export async function findUserByEmail(email: string) {
-  const snapshot = await USERS_REF.orderByChild("email").equalTo(email).once("value");
-  const data = snapshot.val();
-  if (!data) return null;
-
-  const uid = Object.keys(data)[0];
-  return data[uid];
-}
+export default new UserDAO();
