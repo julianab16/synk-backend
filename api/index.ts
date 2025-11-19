@@ -39,15 +39,23 @@ const defaultOrigins = ['http://localhost:3000', 'http://localhost:8080', 'https
 const raw = (process.env.CORS_ORIGINS || defaultOrigins.join(','));
 const allowedOrigins = raw.split(',').map(s => s.trim()).filter(Boolean);
 
-app.use(cors({
-    origin: (origin: any, callback: (err: Error | null, allow?: boolean) => void) => {
-        // allow requests with no origin (mobile apps, curl, server-to-server)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
-        return callback(new Error('CORS policy: origin not allowed'));
-    },
-    credentials: true,
-}));
+// Simple CORS middleware: set Access-Control headers when the Origin is allowed.
+app.use((req, res, next) => {
+    const origin = req.headers.origin as string | undefined;
+    console.log('[CORS] incoming origin:', origin);
+    if (!origin) return next();
+    if (allowedOrigins.includes('*') || allowedOrigins.indexOf(origin) !== -1) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    }
+    if (req.method === 'OPTIONS') {
+        // short-circuit preflight
+        return res.sendStatus(204);
+    }
+    next();
+});
 
 // Note: explicit wildcard path caused path-to-regexp errors in some envs.
 // `app.use(cors(...))` above already enables CORS and handles preflight.
