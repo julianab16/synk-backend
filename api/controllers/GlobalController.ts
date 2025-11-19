@@ -24,7 +24,7 @@ export default class GlobalController<T = any> {
      * @param res - Express response object.
      * @returns Sends status 201 with the created document, or 400 on error.
      */
-    async create(req: Request, res: Response): Promise<void> {
+    async create(req: Request, res: Response): Promise<any> {
         try {
             const item = await this.dao.create(req.body);
             res.status(201).json(item);
@@ -39,15 +39,15 @@ export default class GlobalController<T = any> {
      * @param res - Express response object.
      * @returns Sends status 200 with the document, or 404 if not found.
      */
-    async read(req: Request, res: Response): Promise<void> {
+    async read(req: Request, res: Response): Promise<any> {
         try {
             const item = await this.dao.getById(req.params.id);
             if (!item) {
-                res.status(404).json({ message: 'Not found' });
+                return res.status(404).json({ message: 'Not found' });
             }
-            res.status(200).json(item);
+            return res.status(200).json(item);
         } catch (error: any) {
-            res.status(404).json({ message: error.message });
+            return res.status(404).json({ message: error.message });
         }
     }
     
@@ -57,12 +57,12 @@ export default class GlobalController<T = any> {
      * @param res - Express response object.
      * @returns Sends status 200 with the updated document, or 400 on validation error.
      */
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request, res: Response): Promise<any> {
         try {
             const item = await this.dao.update(req.params.id, req.body);
-            res.status(200).json(item);
+            return res.status(200).json(item);
         } catch (error: any) {
-            res.status(400).json({ message: error.message });
+            return res.status(400).json({ message: error.message });
         }
     }
     
@@ -72,12 +72,12 @@ export default class GlobalController<T = any> {
      * @param res - Express response object.
      * @returns Sends status 200 with the deleted document, or 404 if not found.
      */
-    async delete(req: Request, res: Response): Promise<void> {
+    async delete(req: Request, res: Response): Promise<any> {
         try {
             const item = await this.dao.delete(req.params.id);
-            res.status(200).json(item);
+            return res.status(200).json(item);
         } catch (error: any) {
-            res.status(404).json({ message: error.message });
+            return res.status(404).json({ message: error.message });
         }
     }
     
@@ -87,12 +87,13 @@ export default class GlobalController<T = any> {
      * @param res - Express response object.
      * @returns Sends status 200 with the array of documents, or 400 on error.
      */
-    async getAll(req: Request, res: Response): Promise<void> {
+    async getAll(req: Request, res: Response): Promise<any> {
         try {
-            const items = await this.dao.getAll(req.query);
-            res.status(200).json(items);
+            // GlobalDAO.getAll does not accept args; pass filters through DAO if implemented
+            const items = await this.dao.getAll();
+            return res.status(200).json(items);
         } catch (error: any) {
-            res.status(400).json({ message: error.message });
+            return res.status(400).json({ message: error.message });
         }
     }
 }
