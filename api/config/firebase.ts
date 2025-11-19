@@ -14,5 +14,6 @@ if (!admin.apps.length) {
   });
 }
 
-export const db = admin.database();         // Realtime Database
-export const firestore = admin.firestore(); // Firestore (si lo usas)
+// export const db = admin.database();         // Realtime Database
+export const db = admin.firestore(); // Firestore (si lo usas)
+export const auth = admin.auth();
