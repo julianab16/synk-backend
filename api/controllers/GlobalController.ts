@@ -74,10 +74,16 @@ export default class GlobalController<T = any> {
      */
     async delete(req: Request, res: Response): Promise<any> {
         try {
-            const item = await this.dao.delete(req.params.id);
-            return res.status(200).json(item);
+            console.log('[GlobalController.delete] id to delete=', req.params.id);
+            const deleted = await this.dao.delete(req.params.id);
+            if (!deleted) {
+                return res.status(404).json({ message: 'Not found' });
+            }
+            // No content on successful delete
+            return res.sendStatus(204);
         } catch (error: any) {
-            return res.status(404).json({ message: error.message });
+            console.error('[GlobalController.delete] error', error);
+            return res.status(500).json({ message: error.message });
         }
     }
     

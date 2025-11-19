@@ -238,6 +238,63 @@ async login(req: Request, res: Response): Promise<any> {
       return res.status(500).json({ message: 'Failed to get profile' });
     }
   }
+
+  /**
+   * Override delete to handle cases where Firestore doc id != auth uid.
+   * Tries to delete by provided id (usually the uid). If not found, falls back
+   * to finding the document by the authenticated user's email and deleting that.
+   */
+  async delete(req: Request, res: Response): Promise<any> {
+    try {
+      const id = req.params.id;
+      console.log('[UserController.delete] requested id=', id);
+
+      // Try direct delete by id (GlobalDAO.delete now returns boolean)
+      const daoAny: any = this.dao;
+      const deleted = await daoAny.delete(id);
+      if (deleted) {
+        // If the requester is the same user, also remove the Firebase Auth user.
+        try {
+          const anyReq: any = req;
+          const requesterUid = anyReq.user?.uid as string | undefined;
+          const allowAdmin = String(process.env.ALLOW_ADMIN_DELETE || '').toLowerCase() === 'true';
+          if (requesterUid === id || allowAdmin) {
+            try {
+              await auth.deleteUser(id);
+              console.log('[UserController.delete] deleted auth user uid=', id);
+            } catch (e: any) {
+              console.error('[UserController.delete] failed to delete auth user', id, e?.message ?? e);
+              // continue — profile deleted, but auth user deletion failed
+            }
+          } else {
+            console.log('[UserController.delete] skipping auth.deleteUser for uid=', id, ' requester=', requesterUid);
+          }
+        } catch (e) {
+          console.error('[UserController.delete] auth deletion check failed', e);
+        }
+
+        return res.sendStatus(204);
+      }
+
+      // Fallback: if auth middleware provided an email, find the doc by email
+      const anyReq: any = req;
+      const email = anyReq.user?.email as string | undefined;
+      if (email && typeof daoAny.findByEmail === 'function') {
+        console.log('[UserController.delete] fallback: searching by email=', email);
+        const found = await daoAny.findByEmail(email);
+        if (found && found.id) {
+          console.log('[UserController.delete] found doc by email id=', found.id);
+          const deleted2 = await daoAny.delete(found.id);
+          if (deleted2) return res.sendStatus(204);
+        }
+      }
+
+      return res.status(404).json({ message: 'Not found' });
+    } catch (err: any) {
+      console.error('[UserController.delete] error', err);
+      return res.status(500).json({ message: 'Delete failed' });
+    }
+  }
 }
 
 export default new UserController();
