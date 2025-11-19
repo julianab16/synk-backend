@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS configuration
 // Allow origins from CORS_ORIGINS env var (comma-separated), falling back to localhost and deployed URL
-const defaultOrigins = ['http://localhost:3000', 'http://localhost:8080', 'https://synk-backend-bia5.onrender.com'];
+const defaultOrigins = ['http://localhost:3000', 'http://localhost:8080', 'https://synk-backend-bia5.onrender.com','https://synk-client.vercel.app'];
 const raw = (process.env.CORS_ORIGINS || defaultOrigins.join(','));
 const allowedOrigins = raw.split(',').map(s => s.trim()).filter(Boolean);
 
