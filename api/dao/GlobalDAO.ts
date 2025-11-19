@@ -52,7 +52,23 @@ export class GlobalDAO<T extends { id?: string }> {
         }
 
     /** Delete document by id. */
-    async delete(id: string): Promise<void> {
-        await this.collection.doc(id).delete();
+    async delete(id: string): Promise<boolean> {
+        const docRef = this.collection.doc(id);
+        const doc = await docRef.get();
+        // debug: log existence and a small preview of the document to help troubleshooting
+        try {
+            console.log(`[GlobalDAO.delete] checking id=${id} exists=${doc.exists}`);
+            if (doc.exists) {
+                const preview = doc.data();
+                // limit large payloads in logs
+                console.log('[GlobalDAO.delete] doc preview:', JSON.stringify(preview).slice(0, 1000));
+            }
+        } catch (e) {
+            console.error('[GlobalDAO.delete] failed to log doc preview', e);
+        }
+
+        if (!doc.exists) return false;
+        await docRef.delete();
+        return true;
     }
 }
