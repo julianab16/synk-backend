@@ -10,6 +10,9 @@
 
 import express, { Express, Request, Response } from 'express';
 import dotenv from 'dotenv';
+// use require() to avoid missing @types/cors in dev dependencies
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const cors = require('cors');
 import routes from './routes/routes';
 
 // Load environment variables from .env file
@@ -29,6 +32,27 @@ const app: Express = express();
  */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// CORS configuration
+// Allow origins from CORS_ORIGINS env var (comma-separated), falling back to localhost and deployed URL
+const defaultOrigins = ['http://localhost:3000', 'http://localhost:8080', 'https://synk-backend-bia5.onrender.com'];
+const raw = (process.env.CORS_ORIGINS || defaultOrigins.join(','));
+const allowedOrigins = raw.split(',').map(s => s.trim()).filter(Boolean);
+
+app.use(cors({
+    origin: (origin: any, callback: (err: Error | null, allow?: boolean) => void) => {
+        // allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+        return callback(new Error('CORS policy: origin not allowed'));
+    },
+    credentials: true,
+}));
+
+// Note: explicit wildcard path caused path-to-regexp errors in some envs.
+// `app.use(cors(...))` above already enables CORS and handles preflight.
+// If explicit preflight handling is required, use a middleware that checks
+// req.method === 'OPTIONS' and delegates to cors().
 
 /**
  * Mount the API routes.
